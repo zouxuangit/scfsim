@@ -84,6 +84,10 @@ def _firm_identities(firms, cfg, core_name) -> List[str]:
         if cfg.firm.payables_delay == 0 and f.payables_due:
             out.append(f"{name}: payables booked although costs are paid "
                        "immediately")
+        if (cfg.bank.instrument == "receivables_purchase"
+                and (f.loans > TOL or f.loan_book or f.interest_book)):
+            out.append(f"{name}: carries loans under a receivables-purchase "
+                       "instrument")
         # a drawing can never exceed the total ever drawn
         if f.loans > f.cum_financing + TOL:
             out.append(f"{name}: outstanding {f.loans:.6g} exceeds cumulative "
@@ -124,11 +128,31 @@ def _bank_identities(firms, banks, cfg, core_name) -> List[str]:
                 out.append(f"bank {b.bank_id}: unrecorded exposure to {name}")
         if b.losses < -TOL:
             out.append(f"bank {b.bank_id}: negative cumulative losses")
-        # write-offs are bounded by what was lent, net of recoveries
-        ceiling = b.cum_credit * (1 - cfg.bank.loan_recovery) + TOL
-        if b.losses > ceiling:
-            out.append(f"bank {b.bank_id}: write-offs {b.losses:.6g} exceed "
-                       f"lending net of recovery {ceiling:.6g}")
+        # write-offs are bounded by what was lent, net of recoveries; under
+        # a receivables purchase the bank can lose at most what it paid
+        if cfg.bank.instrument == "receivables_purchase":
+            ceiling = b.cum_credit + TOL
+            if b.losses > ceiling:
+                out.append(f"bank {b.bank_id}: losses {b.losses:.6g} exceed "
+                           f"total purchase consideration {ceiling:.6g}")
+            if b.outstanding:
+                out.append(f"bank {b.bank_id}: records loan exposure under a "
+                           "receivables-purchase instrument")
+            if b.purchased_cost_outstanding < -TOL:
+                out.append(f"bank {b.bank_id}: negative purchased cost "
+                           "outstanding")
+            for seller, tranches in b.purchased.items():
+                if any(v < -TOL for v in tranches.values()):
+                    out.append(f"bank {b.bank_id}: negative purchased face "
+                               f"from {seller}")
+        else:
+            ceiling = b.cum_credit * (1 - cfg.bank.loan_recovery) + TOL
+            if b.losses > ceiling:
+                out.append(f"bank {b.bank_id}: write-offs {b.losses:.6g} exceed "
+                           f"lending net of recovery {ceiling:.6g}")
+            if b.purchased or b.purchased_cost_outstanding > TOL:
+                out.append(f"bank {b.bank_id}: holds purchased receivables "
+                           "under a loan instrument")
         tight = b.tightening()
         if not (-TOL <= tight <= 1 + TOL):
             out.append(f"bank {b.bank_id}: credit multiplier {tight:.6g} "

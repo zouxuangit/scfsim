@@ -69,7 +69,29 @@ class FirmConfig:
 
 @dataclass
 class BankConfig:
-    """Financial-institution parameters."""
+    """Financial-institution parameters, including the contract layer.
+
+    ``instrument`` selects the financing contract, which determines who
+    ultimately bears credit risk (the contract layer introduced in
+    response to the 2026 external review, Q3):
+
+    * ``"loan_against_receivables"`` (default) -- the firm borrows against
+      its own receivables; the loan sits on the firm's books and the bank
+      writes it down when *the borrower* defaults. Full supplier recourse
+      in economic substance; the primary obligor is the supplier.
+    * ``"receivables_purchase"`` -- the firm sells receivables to the bank
+      at ``advance_rate x (1 - haircut) x (1 - fraud)`` per unit of face
+      value. The asset leaves the seller's books; the bank's claim is on
+      the seller's *buyers*, so a seller default causes no write-off,
+      while a buyer default (including the core enterprise's) hits the
+      bank directly. Non-recourse on buyer credit; the primary obligor is
+      the buyer.
+
+    The two instruments answer different questions: the first, how far
+    deep-tier visibility widens supplier borrowing capacity; the second,
+    whether the same visibility actually moves credit risk from suppliers
+    to funders.
+    """
 
     advance_rate: float = 0.80        # max loan / eligible receivables
     interest_rate: float = 0.02       # per-period rate on SCF loans
@@ -86,11 +108,31 @@ class BankConfig:
     #: Part of the credit-crunch channel: switched off with it.
     pricing_slope: float = 0.0
 
+    #: The financing contract. See the class docstring.
+    instrument: str = "loan_against_receivables"
+
+    INSTRUMENTS = ("loan_against_receivables", "receivables_purchase")
+
     def __post_init__(self):
         if self.loan_maturity < 1:
             raise ValueError("loan_maturity must be at least 1 period")
         if self.pricing_slope < 0:
             raise ValueError("pricing_slope must be non-negative")
+        if self.instrument not in self.INSTRUMENTS:
+            raise ValueError(f"instrument must be one of {self.INSTRUMENTS}, "
+                             f"got {self.instrument!r}")
+
+    @property
+    def recourse_mode(self) -> str:
+        """Who the funder can pursue: derived from the instrument."""
+        return ("full_supplier" if self.instrument == "loan_against_receivables"
+                else "nonrecourse_buyer")
+
+    @property
+    def primary_obligor(self) -> str:
+        """Whose credit the funder ultimately relies on."""
+        return ("supplier" if self.instrument == "loan_against_receivables"
+                else "buyer")
 
 
 @dataclass

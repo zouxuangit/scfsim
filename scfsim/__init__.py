@@ -25,7 +25,8 @@ from .metamorphic import (outcome_signature, relabelled, scaled,
                           truncated)
 from .metrics import RunResult, batch_summary
 from .reference import (ReferenceTrace, linear_chain, restricted_config,
-                        simulate_reference)
+                        simulate_reference,
+                        simulate_reference_purchase)
 from .network import (CORE, core_node, generate_network, network_from_edges,
                       validate_network)
 from .simulation import Simulation, run_batch
@@ -34,14 +35,14 @@ from .sweep import (ablation, channel_decomposition, grid_sweep,
 from .viz import (plot_channel_ablation, plot_channel_contributions,
                   plot_scenario_comparison, plot_sensitivity)
 
-__version__ = "0.16.3"
+__version__ = "0.17.0"
 __all__ = [
     "BankConfig", "ChannelConfig", "FirmConfig", "NetworkConfig",
     "ScenarioConfig", "ShockConfig", "SimulationConfig",
     "RunResult", "batch_summary", "CORE", "generate_network",
     "check_invariants", "network_invariants", "InvariantViolation",
     "scaled", "relabelled", "truncated", "outcome_signature",
-    "simulate_reference", "linear_chain", "restricted_config",
+    "simulate_reference", "simulate_reference_purchase", "linear_chain", "restricted_config",
     "ReferenceTrace",
     "check_economics", "check_drawing", "comparative_statics",
     "COMPARATIVE_STATICS",

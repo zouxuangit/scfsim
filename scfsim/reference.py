@@ -270,3 +270,149 @@ def simulate_reference(cfg: SimulationConfig,
         trace.default_share.append(len(defaulted - {CORE}) / len(names))
         trace.bank_losses.append(bank_losses)
     return trace
+
+
+def simulate_reference_purchase(cfg: SimulationConfig,
+                                n_tiers: Optional[int] = None) -> ReferenceTrace:
+    """The restricted model under ``instrument = "receivables_purchase"``.
+
+    A separate re-derivation rather than a branch inside
+    :func:`simulate_reference`, so that each reference stays short enough
+    to verify by reading (the readability ceiling in
+    ``tests/test_reference.py`` guards the original; a matching ceiling in
+    ``tests/test_contract.py`` guards this one). Same restrictions: one
+    firm per tier, no stochastic shocks, one bank.
+
+    The financial content, straight from the specification: an illiquid
+    firm *sells* face value from its receivables ledger, pro rata across
+    maturities, at ``advance_rate x (1 - haircut) x (1 - fraud)`` per unit;
+    visibility gates the saleable face and the bank's credit tightening
+    scales its willingness to buy. Sold receivables leave the seller's
+    books and are collected by the bank at maturity from the seller's
+    buyer: a defaulted *buyer* pays the recovery rate and the shortfall
+    below the purchase price is the bank's loss; a defaulted *seller*
+    causes no loss at all, because the bank has no claim on the seller.
+    There are no loans, no interest and no write-off at seller default.
+    """
+    fc = cfg.firm
+    n_tiers = n_tiers or cfg.network.n_tiers
+    names = [f"firm-{t}-0" for t in range(1, n_tiers + 1)]
+    baseline: Dict[str, float] = {}
+    volume = fc.core_demand
+    for name in names:
+        baseline[name] = volume
+        volume *= fc.input_share
+
+    bc, sc = cfg.bank, cfg.scenario
+    price = (bc.advance_rate * (1 - sc.effective_haircut)
+             * (1 - sc.effective_fraud))
+    cash = {n: fc.initial_cash_ratio * baseline[n] for n in names}
+    capacity = {n: 1.0 for n in names}
+    defaulted: set = set()
+    buyer_of = {n: (CORE if i == 0 else names[i - 1])
+                for i, n in enumerate(names)}
+    payables: Dict[str, Dict[int, float]] = {n: {} for n in names}
+    receivables: Dict[str, Dict[int, float]] = {
+        n: {lag: baseline[n] for lag in range(fc.payment_delay)} for n in names
+    }
+    sold: Dict[str, Dict[int, float]] = {n: {} for n in names}
+    bank_capital = cfg.bank.capital_ratio * sum(
+        bc.advance_rate * baseline[n] * max(1, fc.payment_delay)
+        for n in names)
+    bank_losses = 0.0
+
+    trace = ReferenceTrace()
+    for t in range(cfg.n_periods):
+        # 1. settlement -- the bank collects the sold face maturing now
+        #    (the seller's default is irrelevant: the claim is on the
+        #    buyer); then each live firm collects what it still owns
+        for n in names:
+            face = sold[n].pop(t, 0.0)
+            if face > 0:
+                paid = 1.0
+                if cfg.channels.counterparty and buyer_of[n] in defaulted:
+                    paid = fc.receivable_recovery
+                bank_losses += max(0.0, (price - paid) * face)
+        for n in names:
+            if n in defaulted:
+                continue
+            paid = 1.0
+            if cfg.channels.counterparty and buyer_of[n] in defaulted:
+                paid = fc.receivable_recovery
+            cash[n] += receivables[n].pop(t, 0.0) * paid
+            cash[n] -= payables[n].pop(t, 0.0)
+
+        # 2. orders and deliveries
+        sales: Dict[str, float] = {}
+        upstream_demand = 0.0 if CORE in defaulted else fc.core_demand
+        for n in names:
+            if n in defaulted:
+                sales[n] = 0.0
+                upstream_demand = 0.0
+                continue
+            sales[n] = upstream_demand * capacity[n]
+            upstream_demand = fc.input_share * sales[n]
+
+        # 3. production costs and the resulting receivable
+        for n in names:
+            if n in defaulted:
+                continue
+            cash[n] -= fc.fixed_cost_ratio * baseline[n]
+            if fc.payables_delay == 0:
+                cash[n] -= fc.cost_ratio * sales[n]
+            elif sales[n] > 0:
+                due = t + fc.payables_delay
+                payables[n][due] = payables[n].get(due, 0.0) + fc.cost_ratio * sales[n]
+            if sales[n] > 0:
+                due = t + fc.payment_delay
+                receivables[n][due] = receivables[n].get(due, 0.0) + sales[n]
+
+        # 4. financing -- a true sale of face value, pro rata by maturity
+        tightening = 1.0
+        if cfg.channels.credit_crunch and bank_capital > 0:
+            tightening = max(0.0, 1.0 - bank_losses / bank_capital)
+        for i, n in enumerate(names):
+            if n in defaulted or cash[n] >= 0 or price <= 0:
+                continue
+            total = sum(receivables[n].values())
+            if total <= 0:
+                continue
+            tier = i + 1
+            accessible = (total if tier <= sc.effective_visibility
+                          else sc.deep_tier_access * total)
+            face = min(accessible * tightening, -cash[n] / price)
+            if face <= 0:
+                continue
+            fraction = face / total
+            for due in list(receivables[n]):
+                moved = receivables[n][due] * fraction
+                receivables[n][due] -= moved
+                sold[n][due] = sold[n].get(due, 0.0) + moved
+            cash[n] += price * face
+
+        # 5. default resolution -- illiquidity, then the supply cascade;
+        #    no bank write-off: the bank holds no claim on the seller
+        def fail(n: str) -> None:
+            defaulted.add(n)
+            capacity[n] = 0.0
+            payables[n].clear()
+            if buyer_of[n] != CORE:
+                capacity[buyer_of[n]] = max(0.0, capacity[buyer_of[n]] - 1.0)
+
+        for n in names:
+            if n not in defaulted and cash[n] < -fc.default_tolerance * baseline[n]:
+                fail(n)
+        if t == cfg.shock.core_default_time:
+            defaulted.add(CORE)
+        if t == cfg.shock.seed_time:
+            for n in cfg.shock.seed_firms:
+                if n not in defaulted:
+                    fail(n)
+
+        trace.cash.append(dict(cash))
+        trace.sales.append(dict(sales))
+        trace.loans.append({n: 0.0 for n in names})
+        trace.defaulted.append(set(defaulted))
+        trace.default_share.append(len(defaulted - {CORE}) / len(names))
+        trace.bank_losses.append(bank_losses)
+    return trace

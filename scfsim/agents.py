@@ -59,8 +59,21 @@ class BankState:
     initial_capital: float = 0.0
     losses: float = 0.0
     outstanding: Dict[str, float] = field(default_factory=dict)
+    #: Receivables the bank has *purchased* (instrument
+    #: ``"receivables_purchase"``): seller name -> {maturity period -> face
+    #: value}. The claims are on the seller's buyers, not on the seller, so
+    #: they survive the seller's default and are collected by the bank.
+    purchased: Dict[str, Dict[int, float]] = field(default_factory=dict)
+    #: Cost basis of the purchased book still outstanding (funds employed).
+    purchased_cost_outstanding: float = 0.0
     failed: bool = False
     cum_credit: float = 0.0
+
+    def book_purchase(self, seller: str, due: int, face: float,
+                      cost: float) -> None:
+        tranche = self.purchased.setdefault(seller, {})
+        tranche[due] = tranche.get(due, 0.0) + face
+        self.purchased_cost_outstanding += cost
 
     def loan_rate(self, base_rate: float, slope: float) -> float:
         """Rate on a new drawing under risk-based pricing.

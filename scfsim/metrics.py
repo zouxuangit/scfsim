@@ -30,7 +30,9 @@ class RunResult:
         n = len(active)
         self.default_share.append(
             sum(1 for f in active if f.defaulted) / n if n else 0.0)
-        self.credit_outstanding.append(sum(f.loans for f in active))
+        self.credit_outstanding.append(
+            sum(f.loans for f in active)
+            + sum(b.purchased_cost_outstanding for b in banks.values()))
         self.bank_losses.append(sum(b.losses for b in banks.values()))
 
     def finalise(self, firms: Dict[str, "FirmState"],

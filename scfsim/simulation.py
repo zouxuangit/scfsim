@@ -154,8 +154,37 @@ class Simulation:
                             t, self.core)
 
     # ---------------------- phase 1: settlement ----------------------- #
+    def _purchase_price(self) -> float:
+        """Price per unit of face value under ``receivables_purchase``."""
+        sc, bc = self.cfg.scenario, self.cfg.bank
+        return (bc.advance_rate * (1 - sc.effective_haircut)
+                * (1 - sc.effective_fraud))
+
+    def _collect_purchased(self, t: int) -> None:
+        """The bank collects purchased receivables maturing now.
+
+        The claims are on the sellers' *buyers*: a defaulted seller does not
+        impair them (non-recourse), while defaulted buyers pay only the
+        recovery rate, and the shortfall below the purchase price is the
+        bank's credit loss -- including on the core enterprise itself.
+        """
+        price = self._purchase_price()
+        for bank in self.banks.values():
+            for seller, tranches in bank.purchased.items():
+                face = tranches.pop(t, 0.0)
+                if face <= 0:
+                    continue
+                rate = self._collection_rate(self.firms[seller], t)
+                bank.purchased_cost_outstanding = max(
+                    0.0, bank.purchased_cost_outstanding - price * face)
+                shortfall = max(0.0, (price - rate) * face)
+                if shortfall > 0:
+                    bank.register_loss(shortfall)
+
     def _settle(self, t: int) -> None:
         fc, bc = self.cfg.firm, self.cfg.bank
+        if bc.instrument == "receivables_purchase":
+            self._collect_purchased(t)
         for firm in self.firms.values():
             if firm.name == self.core:
                 continue  # the core always pays; its cash is not tracked
@@ -283,6 +312,9 @@ class Simulation:
     def _request_financing(self, firm: FirmState) -> None:
         bc, sc = self.cfg.bank, self.cfg.scenario
         bank = self.banks[firm.bank]
+        if bc.instrument == "receivables_purchase":
+            self._sell_receivables(firm, bank)
+            return
         eligible = self._eligible_receivables(firm)
         tight = bank.tightening() if self.cfg.channels.credit_crunch else 1.0
         headroom = bc.advance_rate * eligible * tight - firm.loans
@@ -298,6 +330,46 @@ class Simulation:
         bank.cum_credit += request
         if self._layer("economics"):
             check_drawing(firm, eligible, tight, self.cfg)
+
+    def _sell_receivables(self, firm: FirmState, bank) -> None:
+        """Instrument ``"receivables_purchase"``: a true sale, not a loan.
+
+        The firm sells face value from its receivables ledger, pro rata
+        across maturities, at ``_purchase_price`` per unit; visibility
+        gates how much face is saleable, and the bank's credit tightening
+        scales its willingness to buy. Ownership transfers: the sold face
+        moves to the bank's purchased ledger and leaves the seller's books,
+        so eligibility for later sales shrinks automatically and no stock
+        cap on loans is needed -- there are no loans.
+        """
+        sc, bc = self.cfg.scenario, self.cfg.bank
+        total = firm.receivables_outstanding()
+        if total <= 0 or firm.cash >= 0:
+            return
+        accessible = (total if firm.tier <= sc.effective_visibility
+                      else sc.deep_tier_access * total)
+        tight = bank.tightening() if self.cfg.channels.credit_crunch else 1.0
+        price = self._purchase_price()
+        if price <= 0:
+            return
+        max_face = accessible * tight
+        face = min(max_face, -firm.cash / price)
+        if face <= 0:
+            return
+        proceeds = price * face
+        eligible_value_before = (accessible * (1 - sc.effective_haircut)
+                                 * (1 - sc.effective_fraud))
+        fraction = face / total
+        for due in list(firm.receivables_due):
+            moved = firm.receivables_due[due] * fraction
+            firm.receivables_due[due] -= moved
+            bank.book_purchase(firm.name, due, moved, price * moved)
+        firm.cash += proceeds
+        firm.cum_financing += proceeds
+        bank.cum_credit += proceeds
+        if self._layer("economics"):
+            check_drawing(firm, eligible_value_before, tight, self.cfg,
+                          proceeds=proceeds)
 
     def _eligible_receivables(self, firm: FirmState) -> float:
         """Receivables a bank will accept as SCF collateral.

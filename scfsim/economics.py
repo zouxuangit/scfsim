@@ -132,7 +132,8 @@ def _credit_properties(firms, banks, cfg, core_name) -> List[str]:
 
 
 def check_drawing(firm: "FirmState", eligible: float, tightening: float,
-                  cfg: "SimulationConfig") -> None:
+                  cfg: "SimulationConfig",
+                  proceeds: "float | None" = None) -> None:
     """A new drawing must be supported by collateral at the time it is made.
 
     This is a property of the *flow*, not of the stock: once drawn, a loan
@@ -140,7 +141,23 @@ def check_drawing(firm: "FirmState", eligible: float, tightening: float,
     so a firm carrying a longer facility can legitimately owe more than the
     advance rate applied to its receivables *today*. Checking the stock
     instead of the flow is a mistake this project made and caught here.
+
+    Under ``instrument == "receivables_purchase"`` there are no loans;
+    ``proceeds`` is the cash paid for the sold face, and it must not
+    exceed the advance rate applied to the eligible value the seller held
+    *before* the sale, scaled by the bank's willingness to buy.
     """
+    if proceeds is not None:
+        ceiling = cfg.bank.advance_rate * eligible * tightening + 1e-6
+        if proceeds > ceiling:
+            raise EconomicViolation(
+                f"{firm.name}: sale proceeds {proceeds:.6g} exceed the "
+                f"advance-rate ceiling {ceiling:.6g} on eligible collateral")
+        if firm.loans > 1e-9:
+            raise EconomicViolation(
+                f"{firm.name}: carries loans {firm.loans:.6g} under a "
+                "receivables-purchase instrument")
+        return
     ceiling = cfg.bank.advance_rate * eligible * tightening + 1e-6
     if firm.loans > ceiling:
         raise EconomicViolation(
