@@ -4,6 +4,58 @@ All notable changes to SCFSim are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] — 2026-08-28
+
+The first release shaped by the external domain review (archived in
+`docs/REVIEW_2026-08.md`). This release answers the review's Q3 — the
+one finding its author asked to have settled before the core financial
+claims — and re-derives the results that depended on it. The remaining
+review items (obligor-based pricing and a demand response, Q2;
+functional-form robustness of credit tightening, Q4; invoice-level
+recovery measurement, Q7; a global friction design, Q8) are scheduled
+for 1.0.0 and recorded in `docs/REVIEW_INTEGRATION.md`.
+
+### Added — the contract layer (review Q3)
+- `BankConfig.instrument`: `"loan_against_receivables"` (default; the
+  previous engine, bit-for-bit — asserted by a parity test) or
+  `"receivables_purchase"` — a true sale, non-recourse on buyer credit.
+  Derived read-only properties `recourse_mode` and `primary_obligor`
+  document who the funder can pursue and whose credit is relied on.
+- Under the purchase instrument a firm *sells* face value pro rata
+  across maturities at `advance_rate × (1 − haircut) × (1 − fraud)` per
+  unit; the sold face moves to the bank's purchased ledger
+  (`BankState.purchased`), a seller default causes **no** write-off, and
+  a buyer default — including the core enterprise's — is the bank's
+  loss.
+- An independent reference implementation of the purchase regime,
+  `simulate_reference_purchase`, deliberately separate from
+  `simulate_reference` so each stays under the readability ceiling; the
+  engine reproduces it to 1e-9 across six parameterisations, and two
+  injected faults (retained sold assets, a mispriced purchase) are each
+  caught by the stack (`tests/test_contract.py`, 17 tests).
+- Mode-aware invariants: no loans may exist under a purchase instrument,
+  loss ceilings switch from lending-net-of-recovery to total purchase
+  consideration, and purchased face must be non-negative.
+
+### Changed — results conditional on the instrument
+- The anchor-default finding reverses sign with the contract, exactly as
+  the review predicted: with `core_default_time=10` on the stressed
+  network (200 matched paths), deep-tier reach *reduces* bank losses
+  under the loan instrument (ratio ≈ 0.8) and *multiplies* them under
+  the non-recourse purchase (ratio ≈ 23), because the funder then owns
+  claims on the anchor itself. The claim "deep-tier financing leaves
+  banks with less exposure" is therefore an artefact of the
+  loan-against-receivables contract and is no longer stated
+  unconditionally anywhere in the documentation.
+- The headline default-share comparison is robust to the instrument
+  (traditional vs deep-tier: 55.6% → 26.5% under the loan, 58.5% →
+  30.6% under the purchase, same seeds), so it is a statement about
+  liquidity, not about where credit risk ends up.
+- `check_drawing` accepts `proceeds=` and verifies sale proceeds against
+  the pre-sale eligible value; `credit_outstanding` now includes the
+  bank's purchased cost outstanding, so the funds-employed series is
+  comparable across instruments.
+
 ## [0.16.3] - 2026-08-26
 
 Patch: the project's own account of its verification record was stale.

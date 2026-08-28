@@ -9,17 +9,21 @@ counterparty losses, supply disruption, demand contraction, and bank credit crun
 A single scenario switch turns on **blockchain-enabled deep-tier financing** (extended
 receivable visibility, lower verification haircut, suppressed fraud), letting
 researchers quantify how financing technology reshapes systemic risk in supply chains.
-Three further switches, off by default, relax the assumptions the paper ranks as its
-main limitations: suppliers can be paid on terms rather than on delivery
+Four further switches, off by default, relax the assumptions ranked as the
+model's main limitations: suppliers can be paid on terms rather than on delivery
 (`firm.payables_delay`), banks can price credit against their own capital erosion
-(`bank.pricing_slope`), and the core enterprise itself can default
-(`shock.core_default_time`). The first matters: with symmetric trade-credit terms the
+(`bank.pricing_slope`), the core enterprise itself can default
+(`shock.core_default_time`), and the financing contract can be switched from a
+loan against receivables to a non-recourse receivables purchase
+(`bank.instrument`, the contract layer from the 2026 external review). The last
+determines who ultimately bears credit risk: the default-share comparison is
+robust to it, but the sign of the anchor-default result is not — deep-tier reach
+reduces bank losses under the loan and multiplies them under the purchase. The first matters: with symmetric trade-credit terms the
 two scenarios nearly converge in mean default share at every stress level tried, so
 the headline comparison is a statement about chains in which suppliers are paid later
 than they pay — the right-hand half of Table 5 in the paper says so.
 
-> Version 0.16.3 · MIT License · Python ≥ 3.9 · depends only on numpy, networkx, matplotlib
-> [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22141706.svg)](https://doi.org/10.5281/zenodo.22141706)
+> Version 0.17.0 · MIT License · Python ≥ 3.9 · depends only on numpy, networkx, matplotlib
 
 ## Install
 
@@ -160,11 +164,17 @@ The engine is checked against quantities computed *without* simulating:
 
 ### On the credit-crunch channel
 
-Receivables lending is self-liquidating and capped by eligible collateral, so a
-bank's exposure to any one firm is bounded by roughly one invoice cycle. The
-credit-crunch channel is therefore genuinely second-order in SCF, unlike in
-interbank networks where exposures are long-lived: at a bank capital ratio of 0.20
-it adds about 0.3 firms to the mean cascade, rising to about 1.3 firms at 0.015.
+Receivables lending here is self-liquidating and capped by eligible collateral,
+so a bank's exposure to any one firm is bounded by roughly one invoice cycle
+*at any moment*. Under this self-liquidating, collateral-capped specification —
+and absent bank-side funding or interbank liquidity constraints — the
+credit-crunch channel is quantitatively second-order in the simulated parameter
+region: at a bank capital ratio of 0.20 it adds about 0.3 firms to the mean
+cascade, rising to about 1.3 firms at 0.015. The external review (Q5) rejected
+the stronger reading — that the channel is second-order in supply chain finance
+as such — because real facilities refresh their collateral and re-cut their
+borrowing bases continuously, mechanisms this model does not represent; we no
+longer make the structural claim.
 Lengthening `bank.loan_maturity` does not by itself activate it, because the advance
 rate caps the *stock* of principal, so a longer facility defers repayment while
 consuming headroom and leaves peak exposure unchanged. The parameter is therefore
@@ -208,7 +218,7 @@ script that produces it.
 
 ## Limitations
 
-Version 0.16.3 makes the following simplifications, which users should weigh before
+Version 0.17.0 makes the following simplifications, which users should weigh before
 drawing substantive conclusions:
 
 * **No calibration.** All parameters are illustrative. The model reproduces
@@ -321,8 +331,7 @@ and `docs/gen_fig1.py` regenerate the API reference and the architecture figure.
 
 ## Citing
 
-See `CITATION.cff`, or cite the archived release: https://doi.org/10.5281/zenodo.22141706.
-The blockchain scenario design follows the mechanisms discussed
+See `CITATION.cff`. The blockchain scenario design follows the mechanisms discussed
 in Du et al., *IEEE Trans. Eng. Manage.* 67(4), 2020, and the transaction-security
 frictions analysed in Li et al., *IEEE Trans. Eng. Manage.*, 2024. The analytical
 literature the simulator complements — deep-tier financing under blockchain visibility
