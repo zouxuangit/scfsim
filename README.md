@@ -19,6 +19,7 @@ the headline comparison is a statement about chains in which suppliers are paid 
 than they pay — the right-hand half of Table 5 in the paper says so.
 
 > Version 0.16.3 · MIT License · Python ≥ 3.9 · depends only on numpy, networkx, matplotlib
+> [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22141706.svg)](https://doi.org/10.5281/zenodo.22141706)
 
 ## Install
 
@@ -320,7 +321,8 @@ and `docs/gen_fig1.py` regenerate the API reference and the architecture figure.
 
 ## Citing
 
-See `CITATION.cff`. The blockchain scenario design follows the mechanisms discussed
+See `CITATION.cff`, or cite the archived release: https://doi.org/10.5281/zenodo.22141706.
+The blockchain scenario design follows the mechanisms discussed
 in Du et al., *IEEE Trans. Eng. Manage.* 67(4), 2020, and the transaction-security
 frictions analysed in Li et al., *IEEE Trans. Eng. Manage.*, 2024. The analytical
 literature the simulator complements — deep-tier financing under blockchain visibility
