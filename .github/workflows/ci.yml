@@ -84,6 +84,7 @@ jobs:
       - name: Architecture figure regenerates
         run: python docs/gen_fig1.py
       - name: Examples run end to end
-        run: python examples/blockchain_switch.py
+        run: |
+          python examples/blockchain_switch.py
           python examples/channels_and_sensitivity.py --quick
           python examples/custom_network.py
