@@ -9,5 +9,6 @@ authors:
     email: "3191401378@qq.com"
 version: 0.16.3
 date-released: "2026-08-26"
+doi: "10.5281/zenodo.22141706"
 license: MIT
 repository-code: "https://github.com/zouxuangit/scfsim"
