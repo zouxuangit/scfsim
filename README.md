@@ -327,4 +327,5 @@ Xu, *Management Science* 67(10), 2021), and the financing benefits of transparen
 
 ## Support
 
-Questions and bug reports: open a GitHub issue or email `scfsim@REPLACE-ME.org`.
+Questions and bug reports: open a GitHub issue or email `3191401378@qq.com`
+(Xuan Zou, Business School, Hunan Agricultural University).
