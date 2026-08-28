@@ -1,0 +1,23 @@
+{
+  "title": "SCFSim: A Python framework for agent-based simulation of credit risk propagation in supply chain finance networks",
+  "version": "0.16.3",
+  "description": "SCFSim simulates credit risk propagation in multi-tier supply chain finance networks. It couples four switchable contagion channels (counterparty losses, supply disruption, demand contraction, bank credit crunch) with an endogenous receivables-financing backstop whose frictions - visibility depth, verification haircut and fraud rate - are first-class scenario parameters, so that blockchain-enabled deep-tier financing can be studied as a controlled counterfactual. Includes graph-theoretic verification benchmarks, sweep and ablation utilities, and a reproducible example suite.",
+  "license": "MIT",
+  "upload_type": "software",
+  "access_right": "open",
+  "keywords": [
+    "supply chain finance",
+    "credit risk contagion",
+    "agent-based simulation",
+    "blockchain",
+    "complex networks",
+    "systemic risk",
+    "Python"
+  ],
+  "creators": [
+    {
+      "name": "Zou, Xuan",
+      "affiliation": "Business School, Hunan Agricultural University, Changsha, China"
+    }
+  ]
+}
