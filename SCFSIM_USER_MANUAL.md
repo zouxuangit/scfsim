@@ -1,6 +1,6 @@
 # SCFSim User Manual
 
-**Version 0.16.3** · Agent-based simulation of credit risk propagation in supply chain finance networks
+**Version 0.17.0** · Agent-based simulation of credit risk propagation in supply chain finance networks
 
 ---
 
@@ -39,7 +39,7 @@ The distinctive design commitment is that **no result is trusted on the engine's
 - **Five-phase engine** — settlement → orders → production → financing → default resolution, with dated receivable, payable and loan ledgers, warm-start initialisation, and both invoice-tenor (self-liquidating) and revolving facilities.
 - **Four coupled contagion channels** — each independently switchable, so ablation is a configuration change, not a code change.
 - **The blockchain switch** — one boolean moves visibility depth, haircut and fraud rate jointly; each friction is also sweepable on its own.
-- **Assumption switches** — payables on terms, lender-based risk pricing, and a scheduled default of the core enterprise itself.
+- **Assumption switches** — payables on terms, lender-based risk pricing, a scheduled default of the core enterprise itself, and the financing contract (`bank.instrument`: a loan against receivables, or a non-recourse receivables purchase — the contract layer from the 2026 external review; the anchor-default result reverses sign between the two).
 - **Matched Monte Carlo** — `run_batch` replays a scenario over independent seeds with matched network draws; sweeps and ablations reuse the same seeds so differences are treatment effects, not sampling noise.
 - **Strict mode** — `SimulationConfig(strict=True)` verifies the accounting identities and the economic properties after every period, at about 25% runtime cost.
 - **Reproducibility** — every configuration round-trips through JSON; the paper's numbers are asserted by the test suite at the printed precision.
@@ -56,7 +56,7 @@ The distinctive design commitment is that **no result is trusted on the engine's
 | Configuration | JSON-serialisable dataclasses |
 | Packaging | setuptools / PEP 621 (`pyproject.toml`) |
 | Continuous integration | GitHub Actions — Linux, macOS, Windows × Python 3.9–3.12, plus a floor-pinned job (numpy 1.22.4, networkx 2.8, matplotlib 3.5.3) on which the paper's headline numbers reproduce bit-for-bit |
-| Tests | 163 tests, 97% statement coverage |
+| Tests | 180 tests, 97% statement coverage |
 | License | MIT |
 
 No GPU and no network access are required; all computation is local and deterministic given a seed.
@@ -112,13 +112,13 @@ pip install -e .            # engine only
 pip install -e ".[dev]"     # with pytest
 ```
 
-Or install the archived release directly from the DOI landing page (https://doi.org/10.5281/zenodo.22141706), which carries the exact v0.16.3 source.
+Or install the archived release directly from the DOI landing page (https://doi.org/10.5281/zenodo.22147257), which carries the exact v0.17.0 source.
 
 ### 3.2 Verify the Installation
 
 ```bash
 python -c "import scfsim; print(scfsim.__version__)"
-# 0.16.3
+# 0.17.0
 
 MPLBACKEND=Agg pytest tests/ -q -m "not slow"   # fast layer, ~7 s
 MPLBACKEND=Agg pytest tests/ -q                 # full suite incl. paper numbers, ~2 min
@@ -161,7 +161,7 @@ Seven dataclasses, aggregated in `SimulationConfig`; every field has a default, 
 
 - **`NetworkConfig`** — `n_tiers` (3), `firms_per_tier` ((8, 16, 32)), `n_banks` (3), `avg_buyers_per_firm` (1.6), `seed`.
 - **`FirmConfig`** — cost and balance-sheet parameters: `cost_ratio` (0.72), `input_share` (0.55), `fixed_cost_ratio` (0.06), `initial_cash_ratio` (0.35), `payment_delay` (1), **`payables_delay` (0 — suppliers paid on delivery; set 1 for symmetric terms)**, `receivable_recovery` (0.35), `core_demand` (100.0).
-- **`BankConfig`** — `advance_rate` (0.80), `interest_rate` (0.02), `capital_ratio` (0.12), `loan_recovery` (0.40), `loan_maturity` (1 — invoice discounting; larger for a revolving facility), **`pricing_slope` (0.0 — set > 0 to price credit against the lender's capital erosion)**.
+- **`BankConfig`** — `advance_rate` (0.80), `interest_rate` (0.02), `capital_ratio` (0.12), `loan_recovery` (0.40), `loan_maturity` (1 — invoice discounting; larger for a revolving facility), **`pricing_slope` (0.0 — set > 0 to price credit against the lender's capital erosion)**, **`instrument` (`"loan_against_receivables"`; set `"receivables_purchase"` for a true sale, non-recourse on buyer credit — a seller default then causes no bank loss and a buyer default, including the core's, is the bank's loss)**.
 - **`ScenarioConfig`** — the blockchain switch and its frictions: `blockchain` (False), `visibility_depth` (1) vs `bc_visibility_depth` (99), `haircut` (0.25) vs `bc_haircut` (0.05), `fraud_prob` (0.06) vs `bc_fraud_prob` (0.005), `deep_tier_access` (0.15 — residual eligibility beyond the visible depth).
 - **`ChannelConfig`** — four booleans: `counterparty`, `supply`, `demand`, `credit_crunch`, all True.
 - **`ShockConfig`** — `demand_sigma` (0.1), `liquidity_shock_prob` (0.03), `liquidity_shock_size` (0.5), seeding by count (`seed_defaults`, `seed_tier`, `seed_time`) or by name (`seed_firms`), and **`core_default_time` (None — set to a period to default the core enterprise itself)**.
@@ -333,6 +333,7 @@ The JSON round-trip is the recommended way to copy a configuration: both scenari
 cfg.firm.payables_delay = 1        # suppliers paid on terms, not on delivery
 cfg.bank.pricing_slope = 0.4       # credit priced against the lender's capital erosion
 cfg.shock.core_default_time = 5    # the core enterprise itself defaults at period 5
+cfg.bank.instrument = "receivables_purchase"   # true sale, non-recourse on buyer credit
 ```
 
 The first matters most: with symmetric one-period terms the two scenarios nearly converge in mean default share (the systemic-event frequency still falls by a third at the paper's stress level). Any conclusion you draw should be checked against these switches before it is published.
@@ -507,7 +508,7 @@ Every layer tests a property somebody wrote down in advance. The defects found s
 
 ### 10.2 Version
 
-- **Current version:** 0.16.3
+- **Current version:** 0.17.0
 - **Released:** 2026-08-26
 - **License:** MIT
 
@@ -521,14 +522,14 @@ Every layer tests a property somebody wrote down in advance. The defects found s
 
 If you use SCFSim in published work, please cite the archived release:
 
-> Zou, X. (2026). *SCFSim: A Python framework for agent-based simulation of credit risk propagation in supply chain finance networks* (v0.16.3). Zenodo. https://doi.org/10.5281/zenodo.22141706
+> Zou, X. (2026). *SCFSim: A Python framework for agent-based simulation of credit risk propagation in supply chain finance networks* (v0.17.0). Zenodo. https://doi.org/10.5281/zenodo.22147257
 
-DOI: 10.5281/zenodo.22141706. Machine-readable metadata is in `CITATION.cff`.
+DOI: 10.5281/zenodo.22147257. Machine-readable metadata is in `CITATION.cff`.
 
 ### 10.5 Testing
 
 ```bash
-MPLBACKEND=Agg pytest tests/ -q                 # 163 tests, 97% statement coverage
+MPLBACKEND=Agg pytest tests/ -q                 # 180 tests, 97% statement coverage
 MPLBACKEND=Agg pytest tests/ -q -m "not slow"   # fast layer only (~7 s)
 ```
 
@@ -624,7 +625,7 @@ scfsim/
 │   ├── REPRODUCTION.md          # paper figure → script line map
 │   ├── REVIEWER_PACKET.md       # structured domain-review form
 │   └── RELEASE.md               # release runbook
-├── tests/                       # pytest suite (163 tests)
+├── tests/                       # pytest suite (180 tests)
 ├── .github/workflows/           # ci.yml + release.yml
 ├── pyproject.toml
 ├── CITATION.cff                 # incl. DOI
@@ -635,4 +636,4 @@ scfsim/
 
 ---
 
-*SCFSim 0.16.3 · MIT License · Copyright © 2026 Xuan Zou*
+*SCFSim 0.17.0 · MIT License · Copyright © 2026 Xuan Zou*
