@@ -295,13 +295,16 @@ layered networks with an endogenous liquidity backstop**.
 The financial specification has not been reviewed by an independent supply chain
 finance expert, and every internal audit of this project has concluded that such
 a review cannot be substituted for. `docs/REVIEWER_PACKET.md` is a structured
-review form of about 70–100 minutes: it opens with a ten-minute question to be
-answered *before* reading our specification, so that the reviewer's list of
-required mechanisms is not anchored on ours, followed by nine questions ordered
-by how much a wrong answer would change the published results, each with a
-verdict box, answerable from `docs/FINANCIAL_SPEC.md` without reading the code.
-The closing question compares the two lists; that comparison is the review's
-primary output.
+review form, answerable from `docs/FINANCIAL_SPEC.md` without reading the code.
+It opens with a ten-minute question to be answered *before* reading our
+specification, so that the reviewer's list of required mechanisms is not
+anchored on ours. A 90-minute core review then covers the three assumptions
+ranked highest — asymmetric trade credit, exogenous pricing, and where a loss
+lands under recourse — and closes by comparing the reviewer's list with ours;
+that comparison is the review's primary output. An optional extended pass adds
+six lower-stakes questions. Each question carries a verdict box, and the
+maintainers' own expectations are folded out of sight until the reviewer has
+recorded theirs.
 
 ## Contributing
 
