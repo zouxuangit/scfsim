@@ -1,0 +1,10 @@
+# The source distribution is self-contained: the documentation, the example
+# scripts and the release-build figures ship with it, so the full test suite
+# (including tests/test_manuscript.py and tests/test_release_metadata.py)
+# passes from an unpacked sdist as well as from a checkout.
+include LICENSE README.md CHANGELOG.md CITATION.cff .zenodo.json requirements.txt
+include example_output.pdf example_output.png
+include channels_and_sensitivity.pdf channels_and_sensitivity.png
+recursive-include docs *.md *.py *.pdf *.png
+recursive-include examples *.py
+recursive-include tests *.py

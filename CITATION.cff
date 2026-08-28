@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+title: "SCFSim: A Python framework for agent-based simulation of credit risk propagation in supply chain finance networks"
+message: "If you use SCFSim, please cite it as below."
+type: software
+authors:
+  - name: "SCFSim developers"
+version: 0.16.3
+date-released: "2026-08-26"
+license: MIT
+repository-code: "https://github.com/REPLACE-ME/scfsim"
