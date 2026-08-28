@@ -320,19 +320,30 @@ para 3, not a sourcing gap.
    produced, and mark the release as the first with an external review of
    the economics. Bump the version in the seven places
    `tests/test_release_metadata.py` checks; tag; follow `RELEASE.md`.
-7. Acknowledge the reviewer in the manuscript if they agreed to it.
+7. The reviewer is acknowledged anonymously (see the attribution note
+   under the ledger); no named acknowledgement without their consent.
 
-## Verdict ledger (empty until the review returns)
+## Verdict ledger (review returned 2026-08; archived in `REVIEW_2026-08.md`)
 
 | Q | Verdict | Reviewer's reason (one line) | Edit applied | Numbers changed? |
 |---|---|---|---|---|
-| Q1 | | | | |
-| Q2 | | | | |
-| Q3 | | | | |
-| Q4 | | | | |
-| Q5 | | | | |
-| Q6 | | | | |
-| Q7 | | | | |
-| Q8 | | | | |
-| Q9 | | | | |
-| Q10 | | | | |
+| Q1 | QUALIFY | Endogenous SCF demand: the maximal working-capital gap sets baseline risk intensity, not a timing convention | Caveat (reviewer's wording) into the paper; default to be described as a stress case; tiered `payables_delay` scheduled for 1.0.0 | No |
+| Q2 | WRONG | Risk priced against the wrong party; zero price elasticity makes "price does not matter" a product of the specification | General price-channel claim withdrawn from docs; surcharge to be repositioned and a minimal obligor spread + draw response scheduled for 1.0.0 | No |
+| Q3 | WRONG | Recourse, primary obligor and the nature of the assignment undefined: cannot say who risk moved from and to | **Contract layer shipped in 0.17.0** (`bank.instrument`); purchase reference + 17 tests; anchor-default result re-derived and reversed under the purchase | **Yes — sign** |
+| Q4 | QUALIFY | Linear tightening is reduced-form with no regulatory counterpart; step functions produce cliffs it smooths away | Caveat into the paper; four-functional-form robustness scheduled for 1.0.0 | No |
+| Q5 | WRONG (as general claim) | A point-in-time exposure cap does not bound the bank channel over a refreshing relationship | Structural claim withdrawn; README and spec narrowed to "this specification, this parameter region" | No |
+| Q6 | QUALIFY | Re-sourcing and financing are competing mitigations; absence of one may distort the *relative* comparison, unmeasured | Caveat (reviewer's wording) into the paper; mitigation switches scheduled | No |
+| Q7 | QUALIFY (near WRONG for tail claims) | Averaging before a threshold is not realising before it; the differential layer is blind (single buyer) | Caveat into the paper; invoice-level matched measurement scheduled for 1.0.0 before any tail-risk claim | No |
+| Q8 | QUALIFY | Visibility is a gate in the equations, so its dominance is partly structural; enforceability/obligor/dilution omitted | Caveat into the paper; "structural ranking" language removed; global design scheduled | No |
+| Q9 | 8 unreached items | Dilution, base contraction, overadvance, covenant triggers, endogenous terms, set-off, contingents, perfection | Recorded in spec §6 as open mechanisms; endogenous-terms concern attached to the Q1 counterfactual | No |
+| Q10 | Sourcing | Dong et al. is advance-payment, Chod et al. is inventory signalling; Kouvelis & Xu under-used for recourse | Citation mapping corrected in the paper; GSCFF / OCC / Basel sources added for asserted conventions | No |
+
+Attribution: the reviewer deferred the naming decision ("ask me again
+once you have acted on it"). The maintainers decided not to take up the
+offered second pass; without that conversation no consent to be named
+exists, so the review is treated as confidential and the reviewer is
+acknowledged anonymously. Consequence, recorded for honesty: whether the
+0.17.0 edits actually settle Q3 and Q5 is the maintainers' own judgement,
+not the reviewer's confirmation — the manuscript therefore states that
+the specification *was reviewed* and that the caveats are the reviewer's,
+and makes no claim that the revision was endorsed.

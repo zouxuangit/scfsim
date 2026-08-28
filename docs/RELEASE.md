@@ -26,8 +26,8 @@ need a human are the ones that need an account.
 ## Tag and release
 
 ```bash
-git tag -a v0.16.3 -m "SCFSim v0.16.3"
-git push origin v0.16.3
+git tag -a v0.17.0 -m "SCFSim v0.17.0"
+git push origin v0.17.0
 ```
 
 The `Release` workflow then checks that the tag matches

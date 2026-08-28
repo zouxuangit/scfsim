@@ -2,7 +2,7 @@
 
 Items the maintainers must complete before submitting; each replaces a
 `REPLACE-ME` placeholder somewhere in the repository or the manuscript.
-The internal work is complete as of v0.16.3: every item below is either
+The internal work is complete as of v0.17.0: every item below is either
 an action only the authors can take, or one that depends on the outcome
 of the independent domain review. Where a runbook or a ready-made
 document exists for an item, it is named.
@@ -19,7 +19,7 @@ document exists for an item, it is named.
       are filled; **the ORCID field is currently omitted** because none was
       supplied. The checker passes without it, but register an iD and add
       it before tagging if you want the archive to carry one.
-- [ ] Tag the release: `git tag -a v0.16.3 -m "SCFSim v0.16.3" && git push origin v0.16.3`.
+- [ ] Tag the release: `git tag -a v0.17.0 -m "SCFSim v0.17.0" && git push origin v0.17.0`.
       The `Release` workflow builds and publishes the GitHub release;
       Zenodo mints the DOI from it.
 - [ ] Back-fill the DOI: `repository-code` and `doi` in `CITATION.cff`,

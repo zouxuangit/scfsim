@@ -116,6 +116,41 @@ counterparty channel, which is modelled separately).
 
 ---
 
+### The contract layer (v0.17.0, from the external review)
+
+Nothing in earlier versions of this document said whether the financing
+was with or without recourse, or whose credit the lender ultimately
+relied on. The 2026 external review (Q3, archived in
+`REVIEW_2026-08.md`) judged that gap WRONG — without it the model cannot
+say who risk moved from and to — and `BankConfig.instrument` now closes
+it with two contracts:
+
+* **`loan_against_receivables`** (default; the previous engine exactly).
+  The firm borrows against its own receivables; the loan is on the
+  firm's books and is written down when *the borrower* defaults. Full
+  supplier recourse in economic substance; the primary obligor is the
+  supplier. The anchor's credit enters only through collateral
+  eligibility — this instrument represents *collateral widening*, not
+  credit substitution.
+* **`receivables_purchase`**. A true sale at
+  `advance_rate × (1 − haircut) × (1 − fraud)` per unit of face value,
+  pro rata across maturities; visibility gates the saleable face and
+  credit tightening scales the bank's willingness to buy. The asset
+  leaves the seller's books: a seller default causes no bank loss, a
+  buyer default (including the core's) is the bank's loss. Non-recourse
+  on buyer credit; the primary obligor is the buyer. This is the
+  *credit-substitution* reading of deep-tier financing.
+
+The distinction is not decorative. On the stressed network with the
+anchor defaulting at period 10, deep-tier reach cuts bank losses by a
+fifth under the loan instrument and multiplies them roughly twentyfold
+under the purchase — the sign of the risk-migration result is a property
+of the contract, as the review predicted. The default-share comparison
+is robust to the instrument. Structures the layer still does not
+represent, recorded as open: limited-recourse carve-outs (fraud, reps,
+performance), payment undertakings distinct from purchase, dispute and
+set-off erosion, and perfection of assignment.
+
 ## 3. The bank
 
 | Element | Specification | Rationale and caveat |
@@ -179,12 +214,12 @@ and 2 below, recourse, and the pre-registered expectations comparison,
 plus an optional extended pass over the rest. Send that to the reviewer
 rather than this document.
 
-One question in the packet has no counterpart here. Nothing in this
-document says whether the financing is with or without recourse, or
-whether the anchor's credit is substituted for the supplier's rather than
-merely widening the supplier's collateral. The packet asks the reviewer
-directly (Q3); we have left it unresolved here on purpose, so that the
-answer is not anchored on ours.
+The question the packet flagged as having no counterpart here — recourse,
+and whose credit is lent against — was judged WRONG by the review and is
+now settled by the contract layer in §2: two instruments, two answers,
+and the anchor-default result carries the opposite sign under each. Any
+claim about risk migrating to banks must name the instrument it is made
+under.
 
 
 Ordered by how much a wrong answer would change the results:
