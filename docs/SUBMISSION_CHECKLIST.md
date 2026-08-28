@@ -11,17 +11,20 @@ document exists for an item, it is named.
 
 - [ ] Create the public GitHub repository and push `main`; confirm the
       first CI run passes.
-- [ ] Fill the real author name, affiliation and ORCID in `.zenodo.json`
+- [x] Fill the real author name, affiliation and ORCID in `.zenodo.json`
       **before** tagging, and switch the Zenodo–GitHub toggle on for the
       repository (`docs/RELEASE.md`, *Zenodo*). `python docs/check_release_ready.py`
       confirms no placeholder is left and every ORCID checksum is valid;
-      the release workflow refuses to publish otherwise.
+      the release workflow refuses to publish otherwise. Name and affiliation
+      are filled; **the ORCID field is currently omitted** because none was
+      supplied. The checker passes without it, but register an iD and add
+      it before tagging if you want the archive to carry one.
 - [ ] Tag the release: `git tag -a v0.16.3 -m "SCFSim v0.16.3" && git push origin v0.16.3`.
       The `Release` workflow builds and publishes the GitHub release;
       Zenodo mints the DOI from it.
 - [ ] Back-fill the DOI: `repository-code` and `doi` in `CITATION.cff`,
       C2 in the manuscript (`docs/RELEASE.md`, *After the DOI exists*).
-- [ ] Replace the support address `scfsim@REPLACE-ME.org` in `README.md`.
+- [x] Replace the support address `scfsim@REPLACE-ME.org` in `README.md`.
 - [ ] Confirm the first CI run passes on all four jobs — the fast suite
       on all nine matrix entries (especially Windows), the floor job
       (Python 3.9 with the minimum dependency versions, verified locally
