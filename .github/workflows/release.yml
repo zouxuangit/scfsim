@@ -1,0 +1,97 @@
+name: Release
+
+# Runs when a version tag is pushed. It refuses to proceed if the tag does
+# not match the version recorded in the package, runs the fast suite once
+# more on the tagged commit, builds the source and wheel distributions,
+# and attaches them to a GitHub release. Publishing that release is what
+# triggers the Zenodo integration (see docs/RELEASE.md), so this workflow
+# is the mechanical part of "tag -> release -> DOI".
+
+on:
+  push:
+    tags: ["v*"]
+
+env:
+  MPLBACKEND: Agg
+
+jobs:
+  release:
+    name: build and publish ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev] build
+      - name: Tag matches the recorded version
+        run: |
+          python - <<'PY'
+          import os, sys, scfsim
+          tag = os.environ["GITHUB_REF_NAME"].lstrip("v")
+          if tag != scfsim.__version__:
+              sys.exit(f"tag v{tag} does not match scfsim.__version__ "
+                       f"{scfsim.__version__}; fix one and re-tag")
+          PY
+      - name: Version is consistent across metadata files
+        run: pytest tests/test_release_metadata.py -q
+      - name: No placeholders reach the archive
+        # Zenodo mints the DOI from the published release using
+        # .zenodo.json; a placeholder creator or an invalid ORCID makes the
+        # archive fail after the GitHub release already exists. Fail here
+        # instead, before anything is published.
+        run: |
+          python - <<'PY'
+          import json, re, sys, pathlib
+          meta = json.loads(pathlib.Path(".zenodo.json").read_text(encoding="utf-8"))
+          bad = []
+          for c in meta.get("creators", []):
+              blob = json.dumps(c)
+              if "REPLACE-ME" in blob:
+                  bad.append(f"placeholder creator: {c}")
+              orcid = c.get("orcid")
+              if orcid:
+                  digits = orcid.replace("-", "")
+                  if not re.fullmatch(r"\d{15}[\dX]", digits) or orcid == "0000-0000-0000-0000":
+                      bad.append(f"invalid ORCID {orcid!r}")
+                  else:
+                      total = 0
+                      for d in digits[:-1]:
+                          total = (total + int(d)) * 2
+                      check = (12 - total % 11) % 11
+                      if digits[-1] != ("X" if check == 10 else str(check)):
+                          bad.append(f"ORCID checksum fails for {orcid!r}")
+          for path in ("CITATION.cff", "README.md"):
+              if "REPLACE-ME" in pathlib.Path(path).read_text(encoding="utf-8"):
+                  bad.append(f"REPLACE-ME left in {path}")
+          if bad:
+              sys.exit("refusing to release:\n  " + "\n  ".join(bad))
+          PY
+      - name: CITATION.cff is valid
+        run: |
+          pip install cffconvert
+          cffconvert --validate -i CITATION.cff
+      - name: Fast test suite on the tagged commit
+        run: pytest tests/ -q -m "not slow"
+      - name: Build distributions
+        run: python -m build
+      - name: Distributions install and import
+        run: |
+          python -m venv /tmp/venv
+          /tmp/venv/bin/pip install --quiet dist/*.whl
+          /tmp/venv/bin/python -c "import scfsim; print(scfsim.__version__)"
+      - name: GitHub release with distributions attached
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: false
+          body: |
+            SCFSim ${{ github.ref_name }}. See CHANGELOG.md for the release
+            notes. Publishing this release triggers the Zenodo archive and
+            DOI; back-fill the DOI into CITATION.cff and the manuscript
+            (docs/RELEASE.md).
