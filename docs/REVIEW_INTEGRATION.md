@@ -40,12 +40,39 @@ numbers in Section 3, Table 5, `tests/test_manuscript.py` and
 `CHANGELOG.md`.
 
 ---
-
-## Q1 — Exogenous pricing of credit
+## Q1 — Payables settled immediately, receivables delayed
 
 | | |
 |---|---|
-| Spec | §2 *Pricing*, §6 item 1 |
+| Spec | §1 *Variable cost*, §6 item 1 |
+| Code | `_produce_and_finance`: `firm.cash -= cost` in the period of production; receivables booked at `t + payment_delay` |
+| Manuscript | §2.1 phase (3) "pay variable costs on delivery or, optionally, on terms"; Table 5 right-hand columns; §3 closing paragraph "Paying suppliers on the same one-period terms as their customers closes the working-capital gap …"; §5 limitation 1 "immediate payables by default" |
+| Tests | reference (cost timing is one line of the reference arithmetic); `test_invariants.py` drawings-equal-supply |
+
+**QUALIFY.** §3 already states the result conditionally and §5 lists
+the assumption first. If the reviewer wants it in the abstract, add
+"under asymmetric trade-credit terms" after "reshapes that propagation"
+(five words, no line cost on page 1).
+
+**WRONG (v0.12.0 update).** `FirmConfig.payables_delay` now exists,
+mirrored in the reference, and the measurement is in §3 of the paper:
+symmetric terms collapse the mean-share gap to 2 points. A WRONG here
+therefore means one of two things. *The default population is wrong*:
+change the default to `payables_delay = 1`, re-run everything, and
+rewrite the headline around the systemic-event frequency (which still
+halves) rather than the mean share — every number in Section 3 and
+Table 5 changes. *A defaulted buyer's unpaid payables should hit its
+suppliers*: that is a second counterparty channel; the suppliers' side is
+already `receivable_recovery`, so the change is to make the two
+consistent, ~10 lines and a spec §4 rewrite.
+
+---
+
+## Q2 — Exogenous pricing of credit
+
+| | |
+|---|---|
+| Spec | §2 *Pricing*, §6 item 2 |
 | Code | `BankConfig.interest_rate` (flat); charged in `Simulation._settle`; never read in `_request_financing`, so price does not enter the draw decision |
 | Manuscript | §2.1 phase (4) "and, optionally, priced against that erosion"; §3 "In this configuration the reach of deep-tier financing, not the quality of verification, is what makes the blockchain scenario stabilising" and, in the closing paragraph, "Pricing credit against the lender's capital erosion … moves the mean default share by less than one point in either scenario"; §5 limitation 2 "credit priced on the lender rather than the borrower and never refused by firms" |
 | Tests | `test_economics.py` comparative statics (no prediction involves the rate); `test_reference.py` "costly credit" parameterisation |
@@ -72,35 +99,47 @@ re-derived, not re-worded.
 
 ---
 
-## Q2 — Payables settled immediately, receivables delayed
+## Q3 — Where the loss lands: recourse and the anchor's credit
 
 | | |
 |---|---|
-| Spec | §1 *Variable cost*, §6 item 2 |
-| Code | `_produce_and_finance`: `firm.cash -= cost` in the period of production; receivables booked at `t + payment_delay` |
-| Manuscript | §2.1 phase (3) "pay variable costs on delivery or, optionally, on terms"; Table 5 right-hand columns; §3 closing paragraph "Paying suppliers on the same one-period terms as their customers closes the working-capital gap …"; §5 limitation 1 "immediate payables by default" |
-| Tests | reference (cost timing is one line of the reference arithmetic); `test_invariants.py` drawings-equal-supply |
+| Spec | **not addressed** — the word "recourse" does not appear in `FINANCIAL_SPEC.md`. A QUALIFY or WRONG here creates a new §2 subsection and a new §6 item |
+| Code | `_request_financing` books the drawing on the borrowing firm (`firm.loans`); `_resolve_default` writes the exposure down against the *borrower's* default (`bank.register_loss(exposure * (1 - loan_recovery))`); the anchor's credit enters only through `_eligible_receivables`, never through loss allocation. Buyer non-payment reaches suppliers separately via `receivable_recovery` in `_settle` |
+| Manuscript | §2.1 phase (4); the framing of deep-tier financing in §1, which describes the anchor's confirmed payables as what makes a deep-tier supplier bankable |
+| Tests | `test_reference.py` mirrors the write-off rule, so a change is inside the differential scope; `test_invariants.py` write-offs-never-exceed-lending |
 
-**QUALIFY.** §3 already states the result conditionally and §5 lists
-the assumption first. If the reviewer wants it in the abstract, add
-"under asymmetric trade-credit terms" after "reshapes that propagation"
-(five words, no line cost on page 1).
+**OK.** Add a sentence to spec §2 recording that the arrangement is a
+borrowing-base facility with the credit risk on the borrower, and that a
+reviewer judged this the right representation. No manuscript change; this
+is a gap in the *specification*, not in the model, and closing it costs
+nothing.
 
-**WRONG (v0.12.0 update).** `FirmConfig.payables_delay` now exists,
-mirrored in the reference, and the measurement is in §3 of the paper:
-symmetric terms collapse the mean-share gap to 2 points. A WRONG here
-therefore means one of two things. *The default population is wrong*:
-change the default to `payables_delay = 1`, re-run everything, and
-rewrite the headline around the systemic-event frequency (which still
-halves) rather than the mean share — every number in Section 3 and
-Table 5 changes. *A defaulted buyer's unpaid payables should hit its
-suppliers*: that is a second counterparty channel; the suppliers' side is
-already `receivable_recovery`, so the change is to make the two
-consistent, ~10 lines and a spec §4 rewrite.
+**QUALIFY.** The model represents one product and the paper implies a
+wider class. Add to §5, replacing the lowest-ranked limitation: "credit
+risk is carried by the borrowing supplier rather than transferred to the
+anchor" (one line). Spec gains a §2 subsection and a §6 entry at the rank
+the reviewer's answer implies.
+
+**WRONG — the anchor's credit should bear the loss.** This is the largest
+change any verdict in this packet can produce, because it moves the
+anchor from a *collateral* mechanism to a *loss-allocation* mechanism and
+the two scenarios differ precisely in how deep the anchor's credit
+reaches. Loss on a deep-tier drawing would fall on the core enterprise
+(or on the bank's exposure *to* the core) rather than on the failed
+supplier's bank, which changes: who writes off what in `_resolve_default`
+(~10 lines), the capital base in §3 (a bank's receivables-finance book is
+then concentrated on one name), the credit-crunch channel's magnitude,
+and — most importantly — the direction of the deep-tier comparison, since
+deeper reach would now concentrate rather than distribute bank losses.
+The anchor-default result in §3 ("leaves banks with a sixth of the
+losses") must be re-derived, not re-worded; it may reverse. Mirror in
+`scfsim.reference` (the single chain can express it) and re-run
+everything. Budget a full iteration and treat the headline as unproven
+until it is done.
 
 ---
 
-## Q3 — Linear credit tightening and the capital base
+## Q4 — Linear credit tightening and the capital base
 
 | | |
 |---|---|
@@ -127,7 +166,7 @@ regression test *first* and expect it to need a new expected value.
 
 ---
 
-## Q4 — Self-liquidating lending and the second-order credit channel
+## Q5 — Self-liquidating lending and the second-order credit channel
 
 | | |
 |---|---|
@@ -152,7 +191,7 @@ v0.3.0 investigation; budget a full iteration.
 
 ---
 
-## Q5 — Irreversible distress
+## Q6 — Irreversible distress
 
 | | |
 |---|---|
@@ -177,7 +216,7 @@ Numbers change substantially; the bound tests are the first to fail.
 
 ---
 
-## Q6 — Share-weighted recovery instead of invoice-level tracking
+## Q7 — Share-weighted recovery instead of invoice-level tracking
 
 | | |
 |---|---|
@@ -199,7 +238,7 @@ Fig. 2's right panel change.
 
 ---
 
-## Q7 — The blockchain scenario as three frictions
+## Q8 — The blockchain scenario as three frictions
 
 | | |
 |---|---|
@@ -225,7 +264,7 @@ can absorb one more word.
 
 ---
 
-## Q8 — What we failed to ask
+## Q9 — What we failed to ask
 
 Work the Q0/Q8 comparison table row by row:
 
@@ -238,7 +277,7 @@ Work the Q0/Q8 comparison table row by row:
   led by immediate payables). If it is above item 3, it goes into §5 of
   the manuscript in place of the lowest-ranked limitation currently
   listed ("a single final customer"), keeping the sentence to one line.
-  The reviewer packet's Q8 also asks about the anchor-default result
+  The reviewer packet's Q9 also asks about the anchor-default result
   (§3, "deep-tier financing slows the collapse … leaves banks with a
   sixth of the losses"); a "differently" there is a QUALIFY on that
   sentence. If the
@@ -247,7 +286,7 @@ Work the Q0/Q8 comparison table row by row:
 
 ---
 
-## Q9 — Sourcing
+## Q10 — Sourcing
 
 Every citation supplied goes into spec §7 next to the convention it
 supports, and into the manuscript's reference list only where a §1 or §2
@@ -261,23 +300,27 @@ para 3, not a sourcing gap.
 
 ---
 
+
 ## Producing v1.0.0 from the review
 
 1. Fill the ledger below from the returned packet.
 2. Apply all QUALIFY edits (spec first, then manuscript); re-render and
    confirm the body still ends on page 6 with the author block in place.
-3. Apply WRONG edits one at a time, each with its reference mirror or its
+3. A WRONG on Q3 (recourse) is handled before any other WRONG: it can
+   change the direction of the headline comparison, and the edits below
+   assume that direction.
+4. Apply WRONG edits one at a time, each with its reference mirror or its
    Table 4 exclusion, and run the full suite after each.
-4. Re-run both examples in full (`--jobs 0` is identical and faster);
+5. Re-run both examples in full (`--jobs 0` is identical and faster);
    update Section 3, Table 5, `tests/test_manuscript.py`,
    `docs/REPRODUCTION.md` together; regenerate figures;
    `python docs/gen_api.py`; `python docs/gen_fig1.py` if the package
    layout changed; `python docs/check_release_ready.py` before tagging.
-5. Write the `1.0.0` changelog entry: list every verdict and the edit it
+6. Write the `1.0.0` changelog entry: list every verdict and the edit it
    produced, and mark the release as the first with an external review of
    the economics. Bump the version in the seven places
    `tests/test_release_metadata.py` checks; tag; follow `RELEASE.md`.
-6. Acknowledge the reviewer in the manuscript if they agreed to it.
+7. Acknowledge the reviewer in the manuscript if they agreed to it.
 
 ## Verdict ledger (empty until the review returns)
 
@@ -292,3 +335,4 @@ para 3, not a sourcing gap.
 | Q7 | | | | |
 | Q8 | | | | |
 | Q9 | | | | |
+| Q10 | | | | |

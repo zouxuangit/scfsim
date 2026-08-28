@@ -173,9 +173,18 @@ the implementation.
 
 ## 6. What a domain reviewer should attack first
 
-`REVIEWER_PACKET.md` turns this section into a structured 60–90 minute
-review form with a verdict box per question. Send that to the reviewer
+`REVIEWER_PACKET.md` turns this section into a structured review form
+with a verdict box per question: a 90-minute core review covering items 1
+and 2 below, recourse, and the pre-registered expectations comparison,
+plus an optional extended pass over the rest. Send that to the reviewer
 rather than this document.
+
+One question in the packet has no counterpart here. Nothing in this
+document says whether the financing is with or without recourse, or
+whether the anchor's credit is substituted for the supplier's rather than
+merely widening the supplier's collateral. The packet asks the reviewer
+directly (Q3); we have left it unresolved here on purpose, so that the
+answer is not anchored on ours.
 
 
 Ordered by how much a wrong answer would change the results:

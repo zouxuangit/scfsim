@@ -7,7 +7,7 @@ Adapt the salutation and the closing; do not soften the ordering.
 
 ---
 
-Subject: 70–100 minutes of your expertise on a supply chain finance model — one unusual request first
+Subject: 90 minutes of your expertise on a supply chain finance model — one unusual request first
 
 Dear [Name],
 
@@ -18,17 +18,27 @@ internal rounds, and they reached the same conclusion from two
 directions: the internal checks only ever found what their authors
 already knew to worry about, and the things found later came from using
 the model in new ways — one of which showed our headline result to be
-conditional on an assumption we had ranked second. The model's economics
-has never been reviewed by someone who works in supply chain finance.
-We would like that someone to be you.
+conditional on the very assumption we rank first among our limitations.
+The model's economics has never been reviewed by someone who works in
+supply chain finance. We would like that someone to be you.
 
-The attached packet is a structured review form, estimated at 70–100
-minutes, answerable from a specification of about fifteen pages without reading any
-code. Nine of its questions ask you to judge specific assumptions and
-record a verdict — fine, needs a caveat, or wrong.
+The attached packet is a structured review form, answerable from a
+specification of about fifteen pages without reading any code. Its
+**core review takes about 90 minutes** and covers the three assumptions
+we rank highest, each with a verdict — fine, needs a caveat, or wrong.
+An extended pass over six further questions is optional and brings the
+total to about three hours. Please do the core review and stop if that
+is the time you have; we would much rather have four considered answers
+than ten hurried ones, and we cannot tell the difference from the
+outside.
+
+One of the core questions is about something our own specification never
+addresses — whether the financing is with or without recourse, and whose
+credit a lender is really extending. We noticed the gap while preparing
+the packet and deliberately did not resolve it before asking you.
 
 **The unusual request is about the first ten minutes.** Before you open
-the specification or read the nine questions, the packet asks you (Q0) to
+the specification or read the questions, the packet asks you (Q0) to
 write down, from your own knowledge, which mechanisms and conventions a
 credible model of this kind must have. Once you have read our document,
 your list will inevitably be shaped by ours, and the one thing your review
@@ -46,6 +56,9 @@ Practically:
 - If you want to test a claim numerically, the repository installs with
   `pip install -e .` and two scripts reproduce every number in the paper;
   the packet shows how. This is optional.
+- Where a question asks for a caveat, please draft the sentence you would
+  want the paper to carry. If you leave the wording to us we will write it
+  more gently than you would.
 - Return the completed packet by [date] if you can. We will add a caveat to
   the paper for every "needs a caveat", revise the model for every "wrong",
   and cite any literature you point us to for conventions we currently

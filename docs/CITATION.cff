@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+title: "SCFSim: A Python framework for agent-based simulation of credit risk propagation in supply chain finance networks"
+message: "If you use SCFSim, please cite it as below."
+type: software
+authors:
+  - family-names: "Zou"
+    given-names: "Xuan"
+    affiliation: "Business School, Hunan Agricultural University, Changsha, China"
+    email: "3191401378@qq.com"
+version: 0.16.3
+date-released: "2026-08-26"
+license: MIT
+repository-code: "https://github.com/zouxuangit/scfsim"
